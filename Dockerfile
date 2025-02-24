@@ -1,20 +1,33 @@
-FROM --platform=linux/amd64 python:3.9
+# ビルドステージ (AS builder でステージに名前を付ける)
+FROM --platform=linux/amd64 python:3.9-slim AS builder
 
 WORKDIR /app
-
-# 必要なファイルをコピー
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# pipをアップグレード
-RUN pip install --upgrade pip
+# 実行ステージ
+FROM --platform=linux/amd64 python:3.9-slim
 
-# Pythonパッケージをインストール
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
+# ビルドステージからコピー
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 
-# アプリケーションファイルをコピー
-COPY . .
+# アプリケーションファイルのコピー (必要なものだけをコピーしてサイズを削減)
+COPY app.py ./
+COPY templates/ ./templates/
+COPY static/ ./static/
+COPY picture/ ./picture/
+COPY fonts/ ./fonts/
+COPY poems.json ./
 
-# ポート8080を公開
+# イメージサイズ削減のためにキャッシュをクリア
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends fonts-noto-cjk && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# ポート公開
 EXPOSE 8080
 
 # Waitressでアプリケーションを実行
