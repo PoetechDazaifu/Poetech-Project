@@ -150,13 +150,20 @@ http://localhost:8080
 
 また、SakuraのAppRunにコンテナを立ち上げる前に「コンテナレジストリ」に登録する必要があります。
 
-```
+```bash
 docker-compose build
+docker images  # ここで作成されたイメージ名を確認
 docker tag {タグ名} {レジストリで登録した名前}.sakuracr.jp/web:v1.0
 docker push {レジストリで登録した名前}.sakuracr.jp/web:v1.0
 ```
 
 という感じでコンテナを事前に登録しておいて、URLへのアクセス時にサービス側からこのコンテナイメージを呼び出してシステムがWebで稼働します。
+
+今回に限ってはDocker-composeを使う必然性はないので、以下のようにdocker単体のbuildでもOK.
+```bash
+docker build -t {レジストリで登録した名前}.sakuracr.jp/web:v1.1 .
+docker push {レジストリで登録した名前}.sakuracr.jp/web:v1.1
+```
 
 
 ### さくらのAppRunの仕様
