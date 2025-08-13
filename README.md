@@ -114,3 +114,62 @@ $ python app.py
 
 コードへの改善提案があれば、[issues](https://github.com/yourusername/dazaihuproject/issues) に投稿してください。
 
+
+
+
+---
+
+
+## 開発者向け情報
+
+
+リモート環境として既存のPaaSでは形態素解析のメモリ要件が足りないとのことだったので、
+[AppRun β](https://manual.sakura.ad.jp/cloud/apprun/about.html)に2GiBでコンテナが立ち上がるサンプルを作成しています。
+
+
+
+(現在のコンテナが稼働する立ち上がるURL)
+https://app-5f92b294-d806-45b4-8864-4eca7807af15.ingress.apprun.sakura.ne.jp
+
+
+### ローカルでのコンテナ環境テスト
+
+```
+docker-compose build
+docker-compose up
+```
+でDockerコンテナを作成した後、
+
+http://localhost:8080
+でページにアクセスできます。
+
+(本来Flask側で`host='0.0.0.0', port=8080`を設定しているのが最適なのかよくわかって無いです)
+
+
+### さくらのAppRunを利用する
+
+また、SakuraのAppRunにコンテナを立ち上げる前に「コンテナレジストリ」に登録する必要があります。
+
+```
+docker-compose build
+docker tag {タグ名} {レジストリで登録した名前}.sakuracr.jp/web:v1.0
+docker push {レジストリで登録した名前}.sakuracr.jp/web:v1.0
+```
+
+という感じでコンテナを事前に登録しておいて、URLへのアクセス時にサービス側からこのコンテナイメージを呼び出してシステムがWebで稼働します。
+
+
+### さくらのAppRunの仕様
+
+AppRunはゼロステート式で、コンテナ内でDBを動かす場合などは毎回実体が揮発します。
+
+このシステムにおいてはすべて静的なファイルとして保持しているので問題はないです。
+
+また、NGINXなどをコンテナ内で動かしていなくても、AppRun側で自動的に3000番ポートなどのWell-Knownポートを見に行ってくれるほか、最低限SSL対応もされています。
+
+
+### 2025年3月 
+ローディングアニメーションを付加。
+
+### 2025年8月
+OGPを追加。
