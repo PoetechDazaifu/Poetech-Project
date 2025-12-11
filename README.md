@@ -55,7 +55,16 @@ $ source venv/bin/activate
 $ python convert_to_json.py
 ```
 
-### 6. アプリの実行
+
+### 6. データベースの初期化
+
+初回起動時やデータ更新時は、以下のコマンドでデータベースを作成・更新します。
+
+```bash
+$ python init_db.py
+```
+
+### 7. アプリの実行
 
 ```bash
 $ python app.py
