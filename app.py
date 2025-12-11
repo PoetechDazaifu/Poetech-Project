@@ -161,5 +161,7 @@ def generate_wordcloud():
 
 
 if __name__ == "__main__":
+    # Render assigns a port via the PORT environment variable
+    port = int(os.environ.get("PORT", 8080))
     # app.run(debug=os.getenv("FLASK_DEBUG", "False").lower() == "true")
-    serve(app, host='0.0.0.0', port=8080, _quiet=False)
+    serve(app, host='0.0.0.0', port=port, _quiet=False)

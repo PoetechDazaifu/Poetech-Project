@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8080
 
 # Waitressでアプリケーションを実行
-CMD ["python", "-c", "from waitress import serve; from app import app; serve(app, host='0.0.0.0', port=8080)"]
+CMD ["python", "app.py"]

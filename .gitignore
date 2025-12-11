@@ -1,5 +1,6 @@
 # OSのファイル
 .DS_Store
+.serena/
 
 # Pythonのバイトコード
 __pycache__/
