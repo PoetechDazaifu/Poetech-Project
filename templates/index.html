@@ -265,7 +265,7 @@
     });
 
     // 検索処理
-    function search(query, tag = "", source = "", location = "") {
+    function search(query, tag = "", source = "", location = "", useStaticWC = false) {
       showLoading(); // 検索開始時にローディング表示
       axios.post("/search", { query, tag, source, location })
         .then(response => {
@@ -302,7 +302,15 @@
               resultsDiv.appendChild(showMoreBtn);
             }
           }
-          return updateWordCloud(query, tag, source, location);
+
+          if (useStaticWC) {
+            // 静的画像を使用する場合
+            document.getElementById("wordcloud").src = "{{ url_for('static', filename='primary_wc.png') }}";
+            return Promise.resolve();
+          } else {
+            // 動的に生成する場合
+            return updateWordCloud(query, tag, source, location);
+          }
         })
         .then(() => {
           hideLoading(); // 全ての処理が完了したらローディング非表示
@@ -410,7 +418,7 @@
       selectedLocation = "";
       updateTagButtonStyles();
       updateLocationButtonStyles();
-      search("", "", "", "");
+      search("", "", "", "", true); // useStaticWC = true
     }
   </script>
 </body>
