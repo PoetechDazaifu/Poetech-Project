@@ -220,7 +220,8 @@
     <!-- ワードクラウド表示エリア -->
     <div id="wordcloud-container" class="mt-4 text-center">
       <h3><strong>ワードクラウド</strong></h3>
-      <img id="wordcloud" src="" alt="Word Cloud" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+      <img id="wordcloud" src="{{ url_for('static', filename='primary_wc.png') }}" alt="Word Cloud"
+        style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
     </div>
 
     <!-- 検索結果表示エリア -->
@@ -317,6 +318,7 @@
 
     // 句のレンダリングヘルパー関数
     function renderPoems(poems, container, insertBeforeElement = null) {
+      const fragment = document.createDocumentFragment();
       poems.forEach(poem => {
         const div = document.createElement("div");
         div.classList.add("result-item");
@@ -333,12 +335,14 @@
             AIタグ：${tags.join(', ')}
           </p>
         `;
-        if (insertBeforeElement) {
-          container.insertBefore(div, insertBeforeElement);
-        } else {
-          container.appendChild(div);
-        }
+        fragment.appendChild(div);
       });
+
+      if (insertBeforeElement) {
+        container.insertBefore(fragment, insertBeforeElement);
+      } else {
+        container.appendChild(fragment);
+      }
     }
 
     // ワードクラウド更新処理
@@ -408,9 +412,6 @@
       updateLocationButtonStyles();
       search("", "", "", "");
     }
-
-    // ページ読み込み時に全データを表示
-    window.onload = displayAll;
   </script>
 </body>
 
