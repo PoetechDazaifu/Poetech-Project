@@ -8,5 +8,8 @@ __pycache__/
 # 環境設定ファイル
 app.cgi
 
+# データベース
+poems.db
+
 # 仮想環境
 venv/

@@ -30,21 +30,21 @@ WEBアプリリンク:https://poetech-project.onrender.com/
 ### 2. リポジトリのクローン
 
 ```bash
-$ git clone https://github.com/yourusername/dazaihuproject.git
+$ git clone https://github.com/PoetechDazaifu/Poetech-Project.git
 $ cd dazaihuproject
 ```
 
-### 3. 必要なパッケージのインストール
-
-```bash
-$ pip install -r requirements.txt
-```
-
-### 4. 仮想環境の作成
+### 3. 仮想環境の作成
 
 ```bash
 $ python -m venv venv
 $ source venv/bin/activate
+```
+
+### 4. 必要なパッケージのインストール
+
+```bash
+$ pip install -r requirements.txt
 ```
 
 ### 5. JSONデータの作成
@@ -70,7 +70,7 @@ $ python init_db.py
 $ python app.py
 ```
 
-ブラウザで `http://127.0.0.1:5000/` にアクセスするとアプリが起動します。
+ブラウザで `http://0.0.0.0:8080` にアクセスするとアプリが起動します。
 
 
 ---
@@ -100,8 +100,10 @@ $ python app.py
 ├── data
 │   └── AIタグ付け短歌・俳句.xlsx  # データファイル
 ├── fonts                 # 日本語フォント
+├── init_db.py            # データベース初期化
 ├── picture
 │   └── kokoro.png        # ワードクラウド用マスク画像
+├── poems.db              # SQLiteデータベース
 ├── poems.json            # 変換後のJSONデータ
 ├── requirements.txt      # 依存ライブラリ
 ├── static
@@ -141,5 +143,5 @@ $ python app.py
 
 プロジェクトに関する質問やご連絡は、ウェブサイトの問い合わせページへお願いします。
 
-コードへの改善提案があれば、[issues](https://github.com/yourusername/dazaihuproject/issues) に投稿してください。
+コードへの改善提案があれば、[issues](https://github.com/PoetechDazaifu/Poetech-Project/issues) に投稿してください。
 
