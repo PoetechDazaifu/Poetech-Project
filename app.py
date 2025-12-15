@@ -89,6 +89,7 @@ def search():
                 "句": row["text"],
                 "AIタグ": tags,
                 "データ元": row["source"],
+                "年齢": row["age"],
                 "在住地": row["location"]
             })
             

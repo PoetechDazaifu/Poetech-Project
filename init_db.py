@@ -54,6 +54,7 @@ def init_db():
             text TEXT,
             source TEXT,
             location TEXT,
+            age TEXT,
             tags TEXT,
             tokens TEXT
         )
@@ -71,6 +72,7 @@ def init_db():
         text = poem.get("句", "")
         source = poem.get("データ元", "")
         location = poem.get("場所", "")
+        age = poem.get("年齢", "")
         
         # Tags: JSON list -> string (normalized for LIKE search if needed, but JSON is safer)
         tags_raw = poem.get("AIタグ", [])
@@ -94,9 +96,9 @@ def init_db():
         
         tokens_str = " ".join(tokens)
 
-        data_to_insert.append((text, source, location, tags_json, tokens_str))
+        data_to_insert.append((text, source, location, age, tags_json, tokens_str))
 
-    c.executemany('INSERT INTO poems (text, source, location, tags, tokens) VALUES (?, ?, ?, ?, ?)', data_to_insert)
+    c.executemany('INSERT INTO poems (text, source, location, age, tags, tokens) VALUES (?, ?, ?, ?, ?, ?)', data_to_insert)
     
     conn.commit()
     conn.close()
