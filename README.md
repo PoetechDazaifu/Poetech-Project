@@ -99,16 +99,21 @@ $ python app.py
 ├── convert_to_json.py    # ExcelデータをJSONに変換
 ├── data
 │   └── AIタグ付け短歌・俳句.xlsx  # データファイル
+├── docker-compose.yml    # Docker Compose設定
+├── Dockerfile            # Docker設定
 ├── fonts                 # 日本語フォント
 ├── init_db.py            # データベース初期化
 ├── picture
 │   └── kokoro.png        # ワードクラウド用マスク画像
 ├── poems.db              # SQLiteデータベース
 ├── poems.json            # 変換後のJSONデータ
+├── render.yaml           # Renderデプロイ設定
 ├── requirements.txt      # 依存ライブラリ
 ├── static
 │   ├── script.js         # フロントエンドのスクリプト
-│   └── style.css         # スタイルシート
+│   ├── style.css         # スタイルシート
+│   ├── poetech_logo.png  # ロゴ
+│   └── primary_wc.png    # 初期ワードクラウド表示
 ├── templates
 │   └── index.html        # メインページのテンプレート
 └── README.md             # このファイル

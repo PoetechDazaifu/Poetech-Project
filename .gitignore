@@ -5,9 +5,6 @@
 # Pythonのバイトコード
 __pycache__/
 
-# 環境設定ファイル
-app.cgi
-
 # データベース
 poems.db
 
