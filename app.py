@@ -89,7 +89,7 @@ def search():
                 "句": row["text"],
                 "AIタグ": tags,
                 "データ元": row["source"],
-                "場所": row["location"]
+                "在住地": row["location"]
             })
             
         conn.close()
