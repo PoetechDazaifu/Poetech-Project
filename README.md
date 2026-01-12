@@ -8,6 +8,8 @@ Site：https://sites.google.com/view/poetech-dazaifu
 
 WEBアプリリンク:https://poetech-project.onrender.com/
 
+ChatGPT　カスタムGPT：https://chatgpt.com/g/g-67b2d0071e048191836249fc018e914a-poetechtai-zai-fu
+
 ## 📌 主な機能
 
 - **キーワード検索**: 任意の単語で俳句・短歌を検索
