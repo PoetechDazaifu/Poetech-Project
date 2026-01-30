@@ -5,6 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poetech太宰府</title>
+
+  <!-- OGP Settings -->
+  <meta property="og:title" content="Poetech太宰府" />
+  <meta property="og:description" content="テクノロジー×俳句・短歌×まちづくりプロジェクト。太宰府で収集した俳句・短歌を検索・可視化します。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sites.google.com/view/poetech-dazaifu" />
+  <meta property="og:image" content="{{ url_for('static', filename='poetech_logo.png', _external=True) }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -211,12 +220,27 @@
     <!-- ワードクラウド表示エリア -->
     <div id="wordcloud-container" class="mt-4 text-center">
       <h3><strong>ワードクラウド</strong></h3>
-      <img id="wordcloud" src="" alt="Word Cloud" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+      <img id="wordcloud" src="{{ url_for('static', filename='primary_wc.png') }}" alt="Word Cloud"
+        style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
     </div>
 
     <!-- 検索結果表示エリア -->
     <div id="results" class="results"></div>
   </div>
+
+  <footer class="text-center py-4 bg-light mt-5">
+    <div class="container">
+      <p class="mb-0">
+        <a href="https://github.com/PoetechDazaifu/Poetech-Project" target="_blank" rel="noopener noreferrer"
+          class="text-decoration-none text-muted">
+          <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="24"
+            height="24" class="me-2">
+          View on GitHub
+        </a>
+      </p>
+      <p class="small text-muted mt-2">2024-2025 Poetech Dazaifu</p>
+    </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
@@ -241,7 +265,7 @@
     });
 
     // 検索処理
-    function search(query, tag = "", source = "", location = "") {
+    function search(query, tag = "", source = "", location = "", useStaticWC = false) {
       showLoading(); // 検索開始時にローディング表示
       axios.post("/search", { query, tag, source, location })
         .then(response => {
@@ -257,26 +281,36 @@
             countHeader.textContent = `検索結果: ${response.data.length} 件`;
             resultsDiv.appendChild(countHeader);
 
-            response.data.forEach(poem => {
-              const div = document.createElement("div");
-              div.classList.add("result-item");
-              let tags = poem["AIタグ"];
-              if (!Array.isArray(tags)) {
-                tags = [tags];
-              }
-              div.innerHTML = `
-                <p><strong>${poem["句"]}</strong></p>
-                <p>
-                  データ元: ${poem["データ元"]} |
-                  年齢: ${poem["年齢"]} |
-                  居住地: ${poem["在住地"]} |
-                  AIタグ：${tags.join(', ')}
-                </p>
-              `;
-              resultsDiv.appendChild(div);
-            });
+            const DISPLAY_LIMIT = 30;
+            const allPoems = response.data;
+
+            // 最初の30件を表示
+            const initialPoems = allPoems.slice(0, DISPLAY_LIMIT);
+            renderPoems(initialPoems, resultsDiv);
+
+            // 5件を超える場合は「もっと見る」ボタンを表示
+            if (allPoems.length > DISPLAY_LIMIT) {
+              const showMoreBtn = document.createElement("button");
+              showMoreBtn.textContent = `もっと見る (残り ${allPoems.length - DISPLAY_LIMIT} 件)`;
+              showMoreBtn.className = "btn btn-outline-secondary w-100 mt-2";
+              showMoreBtn.onclick = () => {
+                // 残りの句を表示
+                const remainingPoems = allPoems.slice(DISPLAY_LIMIT);
+                renderPoems(remainingPoems, resultsDiv, showMoreBtn);
+                showMoreBtn.remove(); // ボタンを削除
+              };
+              resultsDiv.appendChild(showMoreBtn);
+            }
           }
-          return updateWordCloud(query, tag, source, location);
+
+          if (useStaticWC) {
+            // 静的画像を使用する場合
+            document.getElementById("wordcloud").src = "{{ url_for('static', filename='primary_wc.png') }}";
+            return Promise.resolve();
+          } else {
+            // 動的に生成する場合
+            return updateWordCloud(query, tag, source, location);
+          }
         })
         .then(() => {
           hideLoading(); // 全ての処理が完了したらローディング非表示
@@ -288,6 +322,35 @@
           const resultsDiv = document.getElementById("results");
           resultsDiv.innerHTML = "<p class='text-danger'>検索中にエラーが発生しました。</p>";
         });
+    }
+
+    // 句のレンダリングヘルパー関数
+    function renderPoems(poems, container, insertBeforeElement = null) {
+      const fragment = document.createDocumentFragment();
+      poems.forEach(poem => {
+        const div = document.createElement("div");
+        div.classList.add("result-item");
+        let tags = poem["AIタグ"];
+        if (!Array.isArray(tags)) {
+          tags = [tags];
+        }
+        div.innerHTML = `
+          <p><strong>${poem["句"]}</strong></p>
+          <p>
+            データ元: ${poem["データ元"]} |
+            年齢: ${poem["年齢"] || '不明'} |
+            居住地: ${poem["在住地"]} |
+            AIタグ：${tags.join(', ')}
+          </p>
+        `;
+        fragment.appendChild(div);
+      });
+
+      if (insertBeforeElement) {
+        container.insertBefore(fragment, insertBeforeElement);
+      } else {
+        container.appendChild(fragment);
+      }
     }
 
     // ワードクラウド更新処理
@@ -355,7 +418,9 @@
       selectedLocation = "";
       updateTagButtonStyles();
       updateLocationButtonStyles();
+      search("", "", "", "", true); // useStaticWC = true
     }
   </script>
 </body>
+
 </html>

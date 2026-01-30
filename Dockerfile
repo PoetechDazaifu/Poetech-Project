@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # アプリケーションファイルをコピー
 COPY . .
 
+# データベースを初期化（形態素解析の事前計算）
+RUN python init_db.py
+
 # ポート8080を公開
 EXPOSE 8080
 

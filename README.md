@@ -32,21 +32,21 @@ ChatGPT　カスタムGPT：https://chatgpt.com/g/g-67b2d0071e048191836249fc018e
 ### 2. リポジトリのクローン
 
 ```bash
-$ git clone https://github.com/yourusername/dazaihuproject.git
+$ git clone https://github.com/PoetechDazaifu/Poetech-Project.git
 $ cd dazaihuproject
 ```
 
-### 3. 必要なパッケージのインストール
-
-```bash
-$ pip install -r requirements.txt
-```
-
-### 4. 仮想環境の作成
+### 3. 仮想環境の作成
 
 ```bash
 $ python -m venv venv
 $ source venv/bin/activate
+```
+
+### 4. 必要なパッケージのインストール
+
+```bash
+$ pip install -r requirements.txt
 ```
 
 ### 5. JSONデータの作成
@@ -57,13 +57,22 @@ $ source venv/bin/activate
 $ python convert_to_json.py
 ```
 
-### 6. アプリの実行
+
+### 6. データベースの初期化
+
+初回起動時やデータ更新時は、以下のコマンドでデータベースを作成・更新します。
+
+```bash
+$ python init_db.py
+```
+
+### 7. アプリの実行
 
 ```bash
 $ python app.py
 ```
 
-ブラウザで `http://127.0.0.1:5000/` にアクセスするとアプリが起動します。
+ブラウザで `http://0.0.0.0:8080` にアクセスするとアプリが起動します。
 
 
 ---
@@ -92,14 +101,21 @@ $ python app.py
 ├── convert_to_json.py    # ExcelデータをJSONに変換
 ├── data
 │   └── AIタグ付け短歌・俳句.xlsx  # データファイル
+├── docker-compose.yml    # Docker Compose設定
+├── Dockerfile            # Docker設定
 ├── fonts                 # 日本語フォント
+├── init_db.py            # データベース初期化
 ├── picture
 │   └── kokoro.png        # ワードクラウド用マスク画像
+├── poems.db              # SQLiteデータベース
 ├── poems.json            # 変換後のJSONデータ
+├── render.yaml           # Renderデプロイ設定
 ├── requirements.txt      # 依存ライブラリ
 ├── static
 │   ├── script.js         # フロントエンドのスクリプト
-│   └── style.css         # スタイルシート
+│   ├── style.css         # スタイルシート
+│   ├── poetech_logo.png  # ロゴ
+│   └── primary_wc.png    # 初期ワードクラウド表示
 ├── templates
 │   └── index.html        # メインページのテンプレート
 └── README.md             # このファイル
@@ -134,5 +150,5 @@ $ python app.py
 
 プロジェクトに関する質問やご連絡は、ウェブサイトの問い合わせページへお願いします。
 
-コードへの改善提案があれば、[issues](https://github.com/yourusername/dazaihuproject/issues) に投稿してください。
+コードへの改善提案があれば、[issues](https://github.com/PoetechDazaifu/Poetech-Project/issues) に投稿してください。
 
