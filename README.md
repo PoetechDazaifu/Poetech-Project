@@ -57,7 +57,15 @@ $ source venv/bin/activate
 $ python convert_to_json.py
 ```
 
-### 6. アプリの実行
+### 6. データの文字化けチェック（任意）
+
+`poems.json` 内に文字化けの原因となる「康熙部首（こうきぶしゅ）」が含まれていないかをチェックします。
+
+```bash
+$ python check_kangxi.py
+```
+
+### 7. アプリの実行
 
 ```bash
 $ python app.py
@@ -90,6 +98,7 @@ $ python app.py
 ```
 ├── app.py                # Flaskアプリケーション
 ├── convert_to_json.py    # ExcelデータをJSONに変換
+├── check_kangxi.py       # JSONデータの文字化け（康熙部首）をチェック
 ├── data
 │   └── AIタグ付け短歌・俳句.xlsx  # データファイル
 ├── fonts                 # 日本語フォント
