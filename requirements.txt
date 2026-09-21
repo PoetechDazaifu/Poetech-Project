@@ -1,8 +1,8 @@
-Flask
-waitress
-Pillow
-wordcloud>=1.9.3
-janome
-numpy
-pandas
-openpyxl
+Flask>=3.1,<4
+waitress>=3,<4
+Pillow>=11,<13
+wordcloud>=1.9.4,<2
+Janome>=0.5,<0.6
+numpy>=2,<3
+pandas>=2.2,<4
+openpyxl>=3.1,<4

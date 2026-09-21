@@ -1,6 +1,9 @@
-FROM --platform=linux/amd64 python:3.9
+FROM python:3.12-slim
 
 WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # 必要なファイルをコピー
 COPY requirements.txt .
