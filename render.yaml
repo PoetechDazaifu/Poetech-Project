@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dazaiml
+    name: dazaifuml
     env: docker
     plan: free
     region: singapore
