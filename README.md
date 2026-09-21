@@ -51,10 +51,12 @@ $ pip install -r requirements.txt
 
 ### 5. JSONデータの作成
 
-データソースとして `data/AIタグ付け短歌・俳句.xlsx` をJSON形式に変換します。
+データソースとして `data/AIタグ付け短歌・俳句.xlsx` をJSON形式に変換します。入力ファイルは引数で差し替えられます。
 
 ```bash
 $ python convert_to_json.py
+# 例: 別の入力ファイルを使う場合
+$ python convert_to_json.py path/to/poems.xlsx --output poems.json
 ```
 
 
@@ -66,13 +68,25 @@ $ python convert_to_json.py
 $ python init_db.py
 ```
 
-### 7. アプリの実行
+`AIタグ` は `,` と `、` のいずれで区切られていても個別タグに正規化されます。元データの`在住地`はDBに保持し、公開検索・表示には粗い分類である`場所`（太宰府市内など）のみを用います。
+
+### 7. テスト
+
+DBを初期化した後、次を実行します。
+
+```bash
+$ python -m unittest discover -s tests
+```
+
+### 8. アプリの実行
 
 ```bash
 $ python app.py
 ```
 
 ブラウザで `http://0.0.0.0:8080` にアクセスするとアプリが起動します。
+
+稼働確認には `GET /healthz` を使用できます。
 
 
 ---
@@ -151,4 +165,3 @@ $ python app.py
 プロジェクトに関する質問やご連絡は、ウェブサイトの問い合わせページへお願いします。
 
 コードへの改善提案があれば、[issues](https://github.com/PoetechDazaifu/Poetech-Project/issues) に投稿してください。
-

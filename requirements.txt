@@ -1,8 +1,7 @@
 Flask
-Werkzeug
 waitress
 Pillow
 wordcloud>=1.9.3
 janome
 numpy
-gunicorn
+pandas

@@ -5,170 +5,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poetech太宰府</title>
-
-  <!-- OGP Settings -->
-  <meta property="og:title" content="Poetech太宰府" />
-  <meta property="og:description" content="テクノロジー×俳句・短歌×まちづくりプロジェクト。太宰府で収集した俳句・短歌を検索・可視化します。" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://sites.google.com/view/poetech-dazaifu" />
-  <meta property="og:image" content="{{ url_for('static', filename='poetech_logo.png', _external=True) }}" />
-  <meta name="twitter:card" content="summary_large_image" />
-
+  <meta property="og:title" content="Poetech太宰府">
+  <meta property="og:description" content="テクノロジー×俳句・短歌×まちづくりプロジェクト。太宰府で収集した俳句・短歌を検索・可視化します。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sites.google.com/view/poetech-dazaifu">
+  <meta property="og:image" content="{{ url_for('static', filename='poetech_logo.png', _external=True) }}">
+  <meta name="twitter:card" content="summary_large_image">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #fff8e8;
-      font-family: 'Arial', sans-serif;
-    }
-
-    .header-title {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .sub-title {
-      font-size: 1.2rem;
-      color: #555;
-    }
-
-    .search-container {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-    }
-
-    .search-button {
-      background-color: #f9a825;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-
-    .search-button:hover {
-      background-color: #f57f17;
-    }
-
-    .recommendation {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .tag-button {
-      background-color: #fff2cc;
-      border: 1px solid #f9a825;
-      color: #333;
-      border-radius: 5px;
-      padding: 5px 15px;
-      margin: 5px;
-      cursor: pointer;
-    }
-
-    .tag-button:hover {
-      background-color: #fde293;
-      color: #000;
-    }
-
-    .tag-active {
-      background-color: #f57f17;
-      color: #fff;
-    }
-
-    .location-button {
-      background-color: #fff2cc;
-      border: 1px solid #f9a825;
-      color: #333;
-      border-radius: 5px;
-      padding: 5px 15px;
-      margin: 5px;
-      cursor: pointer;
-    }
-
-    .location-button:hover {
-      background-color: #fde293;
-      color: #000;
-    }
-
-    .location-button.active {
-      background-color: #f57f17;
-      color: #fff;
-    }
-
-    .location-filter {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .results {
-      margin-top: 30px;
-    }
-
-    .result-item {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 10px;
-      box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    /* ローディングオーバーレイのスタイル */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .loading-content {
-      text-align: center;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .spinner-border {
-      width: 3rem;
-      height: 3rem;
-    }
-  </style>
+  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 
 <body>
-  <div class="container my-5">
-    <!-- ローディングインジケータ -->
-    <div id="loading" class="loading-overlay d-none">
+  <main class="container my-5">
+    <div id="loading" class="loading-overlay d-none" role="status" aria-live="assertive" aria-hidden="true">
       <div class="loading-content">
-        <div class="spinner-border text-warning" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+        <div class="spinner-border text-warning" aria-hidden="true"></div>
         <div class="mt-2 text-warning">検索中...</div>
       </div>
     </div>
 
-    <!-- ヘッダー -->
-    <div class="text-center mb-5">
+    <header class="text-center mb-5">
       <h1 class="header-title">Poetech太宰府</h1>
       <p class="sub-title">テクノロジー×俳句・短歌×まちづくりプロジェクト</p>
-      <p>太宰府で収集した俳句・短歌でライブラリを作成。単語とAIによる分類で俳句・短歌を検索。検索結果をワードクラウドで表示</p>
-    </div>
+      <p>太宰府で収集した俳句・短歌でライブラリを作成。単語とAIによる分類で俳句・短歌を検索し、検索結果をワードクラウドで表示します。</p>
+    </header>
 
-    <!-- 検索フォーム -->
-    <div class="search-container mx-auto col-lg-6">
+    <section class="search-container mx-auto col-lg-6" aria-labelledby="search-heading">
+      <h2 id="search-heading" class="visually-hidden">句を検索</h2>
       <form id="search-form">
         <div class="mb-3">
           <label for="search-input" class="form-label">検索キーワード</label>
-          <input type="text" class="form-control" id="search-input" placeholder="例: 太宰府 春 など">
+          <input type="text" class="form-control" id="search-input" maxlength="100" placeholder="例: 太宰府 春 など">
         </div>
-        <!-- データ元（プルダウン） -->
         <div class="mb-3">
           <label for="source-select" class="form-label">データ元</label>
           <select id="source-select" class="form-select">
@@ -179,248 +48,59 @@
           </select>
         </div>
         <button type="submit" class="btn search-button w-100">検索</button>
-        <button type="button" class="btn btn-secondary w-100 mt-2" onclick="clearResults()">クリア</button>
+        <button id="clear-button" type="button" class="btn btn-secondary w-100 mt-2">条件をクリア</button>
       </form>
-    </div>
+    </section>
 
-    <!-- タグフィルター -->
-    <div class="recommendation">
-      <h5 class="mt-5" style="font-weight: bold;">AIによるタグ付けしぼりこみ</h5>
-      <p>
-        <strong>タグ説明</strong><br>
+    <section class="recommendation" aria-labelledby="tag-heading">
+      <h2 id="tag-heading" class="filter-heading">AIによるタグ付けしぼりこみ</h2>
+      <p><strong>タグ説明</strong><br>
         <strong>まちづくり:</strong> 文化振興、芸術活動、地域開発に関する句<br>
         <strong>観光:</strong> オーバーツーリズム、観光振興、交通インフラに関する句<br>
         <strong>危機管理:</strong> 災害、防犯、環境問題に関する句<br>
         <strong>福祉:</strong> 健康、高齢者・障がい者福祉に関する句<br>
         <strong>こども:</strong> こどもの成長、教育、スポーツ、学校に関する句<br>
         <strong>該当なし:</strong> どのタグにも関連しない句<br>
-        ※タグはAIによる分類であり、必ずしも正確ではない可能性があります。
-      </p>
-      <button type="button" class="btn tag-button" onclick="searchByTag('まちづくり')">まちづくり</button>
-      <button type="button" class="btn tag-button" onclick="searchByTag('観光')">観光</button>
-      <button type="button" class="btn tag-button" onclick="searchByTag('危機管理')">危機管理</button>
-      <button type="button" class="btn tag-button" onclick="searchByTag('福祉')">福祉</button>
-      <button type="button" class="btn tag-button" onclick="searchByTag('こども')">こども</button>
-      <button type="button" class="btn tag-button" onclick="searchByTag('該当なし')">該当なし</button>
-    </div>
+        ※タグはAIによる分類であり、必ずしも正確ではない可能性があります。</p>
+      <div class="filter-buttons" role="group" aria-label="AIタグ">
+        <button type="button" class="btn tag-button" data-tag="まちづくり" aria-pressed="false">まちづくり</button>
+        <button type="button" class="btn tag-button" data-tag="観光" aria-pressed="false">観光</button>
+        <button type="button" class="btn tag-button" data-tag="危機管理" aria-pressed="false">危機管理</button>
+        <button type="button" class="btn tag-button" data-tag="福祉" aria-pressed="false">福祉</button>
+        <button type="button" class="btn tag-button" data-tag="こども" aria-pressed="false">こども</button>
+        <button type="button" class="btn tag-button" data-tag="該当なし" aria-pressed="false">該当なし</button>
+      </div>
+    </section>
 
-    <!-- 場所フィルター -->
-    <div class="location-filter">
-      <h5 style="font-weight: bold;">作者の居住地でしぼりこみ</h5>
-      <button type="button" class="btn location-button" onclick="searchByLocation('太宰府市内')">太宰府市内</button>
-      <button type="button" class="btn location-button" onclick="searchByLocation('福岡県内(太宰府市以外)')">福岡県内(太宰府市以外)</button>
-      <button type="button" class="btn location-button" onclick="searchByLocation('福岡県外')">福岡県外</button>
-    </div>
+    <section class="location-filter" aria-labelledby="location-heading">
+      <h2 id="location-heading" class="filter-heading">作者の居住地分類でしぼりこみ</h2>
+      <div class="filter-buttons" role="group" aria-label="居住地分類">
+        <button type="button" class="btn location-button" data-location="太宰府市内" aria-pressed="false">太宰府市内</button>
+        <button type="button" class="btn location-button" data-location="福岡県内(太宰府市以外)" aria-pressed="false">福岡県内(太宰府市以外)</button>
+        <button type="button" class="btn location-button" data-location="福岡県外" aria-pressed="false">福岡県外</button>
+      </div>
+    </section>
 
-    <!-- 全ての句を表示するボタン -->
     <div class="text-center mt-4">
-      <button type="button" class="btn search-button" onclick="displayAll()">全ての句を表示</button>
+      <button id="show-all-button" type="button" class="btn search-button">全ての句を表示</button>
     </div>
 
-    <!-- ワードクラウド表示エリア -->
-    <div id="wordcloud-container" class="mt-4 text-center">
-      <h3><strong>ワードクラウド</strong></h3>
-      <img id="wordcloud" src="{{ url_for('static', filename='primary_wc.png') }}" alt="Word Cloud"
-        style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
-    </div>
+    <section id="wordcloud-container" class="mt-4 text-center" aria-labelledby="wordcloud-heading">
+      <h2 id="wordcloud-heading"><strong>ワードクラウド</strong></h2>
+      <img id="wordcloud" src="{{ url_for('static', filename='primary_wc.png') }}"
+        data-default-src="{{ url_for('static', filename='primary_wc.png') }}" alt="検索結果のワードクラウド">
+    </section>
 
-    <!-- 検索結果表示エリア -->
-    <div id="results" class="results"></div>
-  </div>
+    <section id="results" class="results" aria-live="polite" aria-atomic="false" tabindex="-1"></section>
+  </main>
 
   <footer class="text-center py-4 bg-light mt-5">
     <div class="container">
-      <p class="mb-0">
-        <a href="https://github.com/PoetechDazaifu/Poetech-Project" target="_blank" rel="noopener noreferrer"
-          class="text-decoration-none text-muted">
-          <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="24"
-            height="24" class="me-2">
-          View on GitHub
-        </a>
-      </p>
+      <p class="mb-0"><a href="https://github.com/PoetechDazaifu/Poetech-Project" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="" width="24" height="24" class="me-2">View on GitHub</a></p>
       <p class="small text-muted mt-2">2024-2025 Poetech Dazaifu</p>
     </div>
   </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script>
-    // グローバル変数：現在選択中のタグと場所フィルター
-    let selectedTag = "";
-    let selectedLocation = "";
-
-    // ローディング表示の制御関数
-    function showLoading() {
-      document.getElementById('loading').classList.remove('d-none');
-    }
-
-    function hideLoading() {
-      document.getElementById('loading').classList.add('d-none');
-    }
-
-    document.getElementById("search-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const query = document.getElementById("search-input").value;
-      const sourceValue = document.getElementById("source-select").value;
-      search(query, selectedTag, sourceValue, selectedLocation);
-    });
-
-    // 検索処理
-    function search(query, tag = "", source = "", location = "", useStaticWC = false) {
-      showLoading(); // 検索開始時にローディング表示
-      axios.post("/search", { query, tag, source, location })
-        .then(response => {
-          const resultsDiv = document.getElementById("results");
-          resultsDiv.innerHTML = "";
-
-          if (response.data.length === 0) {
-            resultsDiv.innerHTML = "<p>該当する句が見つかりませんでした。</p>";
-          } else {
-            // 件数表示
-            const countHeader = document.createElement("p");
-            countHeader.style.fontWeight = "bold";
-            countHeader.textContent = `検索結果: ${response.data.length} 件`;
-            resultsDiv.appendChild(countHeader);
-
-            const DISPLAY_LIMIT = 30;
-            const allPoems = response.data;
-
-            // 最初の30件を表示
-            const initialPoems = allPoems.slice(0, DISPLAY_LIMIT);
-            renderPoems(initialPoems, resultsDiv);
-
-            // 5件を超える場合は「もっと見る」ボタンを表示
-            if (allPoems.length > DISPLAY_LIMIT) {
-              const showMoreBtn = document.createElement("button");
-              showMoreBtn.textContent = `もっと見る (残り ${allPoems.length - DISPLAY_LIMIT} 件)`;
-              showMoreBtn.className = "btn btn-outline-secondary w-100 mt-2";
-              showMoreBtn.onclick = () => {
-                // 残りの句を表示
-                const remainingPoems = allPoems.slice(DISPLAY_LIMIT);
-                renderPoems(remainingPoems, resultsDiv, showMoreBtn);
-                showMoreBtn.remove(); // ボタンを削除
-              };
-              resultsDiv.appendChild(showMoreBtn);
-            }
-          }
-
-          if (useStaticWC) {
-            // 静的画像を使用する場合
-            document.getElementById("wordcloud").src = "{{ url_for('static', filename='primary_wc.png') }}";
-            return Promise.resolve();
-          } else {
-            // 動的に生成する場合
-            return updateWordCloud(query, tag, source, location);
-          }
-        })
-        .then(() => {
-          hideLoading(); // 全ての処理が完了したらローディング非表示
-        })
-        .catch(error => {
-          console.error("Error:", error);
-          hideLoading(); // エラー時もローディング非表示
-          // エラーメッセージを表示
-          const resultsDiv = document.getElementById("results");
-          resultsDiv.innerHTML = "<p class='text-danger'>検索中にエラーが発生しました。</p>";
-        });
-    }
-
-    // 句のレンダリングヘルパー関数
-    function renderPoems(poems, container, insertBeforeElement = null) {
-      const fragment = document.createDocumentFragment();
-      poems.forEach(poem => {
-        const div = document.createElement("div");
-        div.classList.add("result-item");
-        let tags = poem["AIタグ"];
-        if (!Array.isArray(tags)) {
-          tags = [tags];
-        }
-        div.innerHTML = `
-          <p><strong>${poem["句"]}</strong></p>
-          <p>
-            データ元: ${poem["データ元"]} |
-            年齢: ${poem["年齢"] || '不明'} |
-            居住地: ${poem["在住地"]} |
-            AIタグ：${tags.join(', ')}
-          </p>
-        `;
-        fragment.appendChild(div);
-      });
-
-      if (insertBeforeElement) {
-        container.insertBefore(fragment, insertBeforeElement);
-      } else {
-        container.appendChild(fragment);
-      }
-    }
-
-    // ワードクラウド更新処理
-    function updateWordCloud(query, tag = "", source = "", location = "") {
-      return axios.post("/wordcloud", { query, tag, source, location }, { responseType: 'blob' })
-        .then(response => {
-          const imageUrl = URL.createObjectURL(response.data);
-          document.getElementById("wordcloud").src = imageUrl;
-        })
-        .catch(error => {
-          console.error("WordCloud Error:", error);
-          throw error; // エラーを上位にスロー
-        });
-    }
-
-    // タグボタン押下時の処理
-    function searchByTag(tag) {
-      selectedTag = tag;
-      updateTagButtonStyles();
-      const query = document.getElementById("search-input").value;
-      const sourceValue = document.getElementById("source-select").value;
-      search(query, tag, sourceValue, selectedLocation);
-    }
-
-    // 場所フィルター押下時の処理
-    function searchByLocation(location) {
-      selectedLocation = location;
-      updateLocationButtonStyles();
-      const query = document.getElementById("search-input").value;
-      const sourceValue = document.getElementById("source-select").value;
-      search(query, selectedTag, sourceValue, location);
-    }
-
-    // タグボタンの選択状態更新
-    function updateTagButtonStyles() {
-      const buttons = document.querySelectorAll('.tag-button');
-      buttons.forEach(button => {
-        if (button.textContent.trim() === selectedTag) {
-          button.classList.add('tag-active');
-        } else {
-          button.classList.remove('tag-active');
-        }
-      });
-    }
-
-    // 場所フィルターの選択状態更新
-    function updateLocationButtonStyles() {
-      const buttons = document.querySelectorAll('.location-button');
-      buttons.forEach(button => {
-        if (button.textContent.trim() === selectedLocation) {
-          button.classList.add('active');
-        } else {
-          button.classList.remove('active');
-        }
-      });
-    }
-
-    // 「全ての句を表示」ボタン用（フィルターリセット）
-    function displayAll() {
-      selectedTag = "";
-      selectedLocation = "";
-      document.getElementById("search-input").value = "";
-      document.getElementById("source-select").value = "";
-      selectedTag = "";
-      selectedLocation = "";
-      updateTagButtonStyles();
-      updateLocationButtonStyles();
-      search("", "", "", "", true); // useStaticWC = true
-    }
-  </script>
 </body>
 
 </html>

@@ -1,181 +1,195 @@
-import os
-import re
-import json
 import io
+import json
 import logging
+import os
 import sqlite3
+from contextlib import contextmanager
+from functools import lru_cache
+from pathlib import Path
+
 import numpy as np
-from PIL import Image 
-from flask import Flask, render_template, request, jsonify, send_file
-from wordcloud import WordCloud
+from flask import Flask, jsonify, render_template, request, send_file
+from PIL import Image
 from waitress import serve
+from wordcloud import WordCloud
+
+BASE_DIR = Path(__file__).resolve().parent
+DB_FILE = BASE_DIR / "poems.db"
+MASK_FILE = BASE_DIR / "picture" / "kokoro.png"
+FONT_FILE = BASE_DIR / "fonts" / "NotoSansJP-Medium.ttf"
+MAX_QUERY_LENGTH = 100
+DEFAULT_PAGE_SIZE = 30
+MAX_PAGE_SIZE = 100
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# データ設定
-DB_FILE = "poems.db"
-
-# ロガー設定
-logging.basicConfig(level=logging.INFO) 
-logger = logging.getLogger('waitress')
-logger.setLevel(logging.INFO)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
+
+@contextmanager
+def db_connection():
+    conn = get_db_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def parse_search_request(data):
+    if not isinstance(data, dict):
+        raise ValueError("JSON body is required")
+
+    def string_value(key):
+        value = data.get(key, "")
+        if not isinstance(value, str):
+            raise ValueError(f"{key} must be a string")
+        value = value.strip()
+        if len(value) > MAX_QUERY_LENGTH:
+            raise ValueError(f"{key} must be {MAX_QUERY_LENGTH} characters or fewer")
+        return value
+
+    try:
+        page = max(int(data.get("page", 1)), 1)
+        page_size = min(max(int(data.get("page_size", DEFAULT_PAGE_SIZE)), 1), MAX_PAGE_SIZE)
+    except (TypeError, ValueError) as error:
+        raise ValueError("page and page_size must be integers") from error
+
+    return {
+        "query": string_value("query"),
+        "tag": string_value("tag"),
+        "source": string_value("source"),
+        "location": string_value("location"),
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def build_where(filters):
+    clauses, params = [], []
+
+    def escaped_like(value):
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+    if filters["query"]:
+        clauses.append("p.text LIKE ? ESCAPE '\\'")
+        params.append(f"%{escaped_like(filters['query'])}%")
+    if filters["source"]:
+        clauses.append("p.source LIKE ? ESCAPE '\\'")
+        params.append(f"%{escaped_like(filters['source'])}%")
+    if filters["location"]:
+        clauses.append("p.location_category = ?")
+        params.append(filters["location"])
+    if filters["tag"]:
+        clauses.append("EXISTS (SELECT 1 FROM poem_tags pt WHERE pt.poem_id = p.id AND pt.tag = ?)")
+        params.append(filters["tag"])
+    return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
+
+
+def get_matching_rows(filters, columns):
+    where, params = build_where(filters)
+    with db_connection() as conn:
+        return conn.execute(f"SELECT {columns} FROM poems p{where} ORDER BY p.id", params).fetchall()
+
+
+@lru_cache(maxsize=1)
+def wordcloud_assets():
+    with Image.open(MASK_FILE) as image:
+        return np.array(image), str(FONT_FILE)
+
+
+@lru_cache(maxsize=128)
+def generate_wordcloud_png(query, tag, source, location):
+    """Generate one image per normalized filter combination per process."""
+    filters = {
+        "query": query,
+        "tag": tag,
+        "source": source,
+        "location": location,
+        "page": 1,
+        "page_size": DEFAULT_PAGE_SIZE,
+    }
+    rows = get_matching_rows(filters, "p.tokens")
+    text = " ".join(row["tokens"] for row in rows if row["tokens"]) or "データなし"
+    mask, font_path = wordcloud_assets()
+    wordcloud = WordCloud(
+        font_path=font_path, background_color="#ffffff", colormap="autumn",
+        width=800, height=800, max_words=100, mask=mask,
+    ).generate(text)
+    image = io.BytesIO()
+    wordcloud.to_image().save(image, "PNG")
+    return image.getvalue()
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
+@app.route("/healthz")
+def healthz():
+    try:
+        with db_connection() as conn:
+            conn.execute("SELECT 1 FROM poems LIMIT 1").fetchone()
+    except sqlite3.Error:
+        logger.exception("Health check failed")
+        return jsonify({"status": "unhealthy"}), 503
+    return jsonify({"status": "ok"})
+
+
 @app.route("/search", methods=["POST"])
 def search():
-    """
-    キーワード、AIタグ、データ元、場所の組み合わせ検索
-    SQLiteを使用して検索を実行
-    """
     try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid request, no JSON data provided"}), 400
+        filters = parse_search_request(request.get_json(silent=True))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
 
-        query = data.get("query", "").strip()
-        tag_filter = data.get("tag", "").strip()
-        source_filter = data.get("source", "").strip()
-        location_filter = data.get("location", "").strip()
+    where, params = build_where(filters)
+    offset = (filters["page"] - 1) * filters["page_size"]
+    try:
+        with db_connection() as conn:
+            total = conn.execute(f"SELECT COUNT(*) FROM poems p{where}", params).fetchone()[0]
+            rows = conn.execute(
+                f"SELECT p.id, p.text, p.source, p.age, p.location_category, p.tags "
+                f"FROM poems p{where} ORDER BY p.id LIMIT ? OFFSET ?",
+                [*params, filters["page_size"], offset],
+            ).fetchall()
+    except sqlite3.Error:
+        logger.exception("Search failed")
+        return jsonify({"error": "検索を実行できませんでした。"}), 500
 
-        conn = get_db_connection()
-        
-        # Base query
-        sql = "SELECT * FROM poems WHERE 1=1"
-        params = []
-
-        # Keyword Search (partial match on text)
-        if query:
-            sql += " AND text LIKE ?"
-            params.append(f"%{query}%")
-        
-        # Source Filter (partial match)
-        if source_filter:
-            sql += " AND source LIKE ?"
-            params.append(f"%{source_filter}%")
-        
-        # Location Filter (exact match)
-        if location_filter:
-            sql += " AND location = ?"
-            params.append(location_filter)
-
-        # Tag Filter (check if tag exists in the JSON list)
-        # Note: SQLite simple LIKE is used here for "contains". 
-        # Since tags are stored as JSON list e.g. ["tag1", "tag2"], LIKE '%"tag1"%' works for exact tag match inside list
-        if tag_filter:
-            # tag_filter usually comes as simple string.
-            # Using LIKE to find the tag inside the stringified list.
-            # Ideally we should use 'json_each' but standard LIKE is sufficient for this scale.
-            sql += " AND tags LIKE ?"
-            params.append(f"%{tag_filter}%")
-
-        cursor = conn.execute(sql, params)
-        rows = cursor.fetchall()
-        
-        results = []
-        for row in rows:
-            # Convert row to dict structure expected by frontend
-            # Frontend expects: "句", "AIタグ", "データ元", "場所"
-            tags = json.loads(row["tags"])
-            results.append({
-                "句": row["text"],
-                "AIタグ": tags,
-                "データ元": row["source"],
-                "年齢": row["age"],
-                "在住地": row["location"]
-            })
-            
-        conn.close()
-
-        return jsonify(results)
-
-    except Exception as e:
-        logger.error(f"Search error: {e}")
-        return jsonify({"error": str(e)}), 500
+    items = [
+        {
+            "句": row["text"],
+            "AIタグ": json.loads(row["tags"]),
+            "データ元": row["source"],
+            "年齢": row["age"],
+            "居住地分類": row["location_category"],
+        }
+        for row in rows
+    ]
+    return jsonify({"items": items, "total": total, "page": filters["page"], "page_size": filters["page_size"]})
 
 
 @app.route("/wordcloud", methods=["POST"])
 def generate_wordcloud():
-    """
-    検索結果の句からワードクラウド画像を生成
-    事前計算されたトークン(tokensカラム)を使用するため、形態素解析は不要。
-    """
     try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid request, no JSON data provided"}), 400
-
-        query = data.get("query", "").strip()
-        tag_filter = data.get("tag", "").strip()
-        source_filter = data.get("source", "").strip()
-        location_filter = data.get("location", "").strip()
-
-        conn = get_db_connection()
-        
-        # Re-use similar logic to search but fetch tokens
-        sql = "SELECT tokens FROM poems WHERE 1=1"
-        params = []
-
-        if query:
-            sql += " AND text LIKE ?"
-            params.append(f"%{query}%")
-        if source_filter:
-            sql += " AND source LIKE ?"
-            params.append(f"%{source_filter}%")
-        if location_filter:
-            sql += " AND location = ?"
-            params.append(location_filter)
-        if tag_filter:
-            sql += " AND tags LIKE ?"
-            params.append(f"%{tag_filter}%")
-
-        cursor = conn.execute(sql, params)
-        rows = cursor.fetchall()
-        conn.close()
-        
-        # Aggregate all tokens
-        all_words = []
-        for row in rows:
-            if row["tokens"]:
-                all_words.append(row["tokens"])
-        
-        text = " ".join(all_words) if all_words else "データなし"
-
-        # マスク画像の読み込み
-        mask = np.array(Image.open("./picture/kokoro.png"))
-
-        # ワードクラウド生成
-        wc = WordCloud(
-            font_path="./fonts/NotoSansJP-Medium.ttf",
-            background_color="#ffffff",
-            colormap="autumn",
-            width=800,
-            height=800,
-            max_words=100,
-            mask=mask,
-        ).generate(text)
-
-        img_io = io.BytesIO()
-        wc.to_image().save(img_io, "PNG")
-        img_io.seek(0)
-        return send_file(img_io, mimetype="image/png")
-
-    except Exception as e:
-        logger.error(f"Wordcloud error: {e}")
-        return jsonify({"error": str(e)}), 500
+        filters = parse_search_request(request.get_json(silent=True))
+        image = generate_wordcloud_png(
+            filters["query"], filters["tag"], filters["source"], filters["location"],
+        )
+        return send_file(io.BytesIO(image), mimetype="image/png", max_age=600)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except Exception:
+        logger.exception("Word cloud generation failed")
+        return jsonify({"error": "ワードクラウドを生成できませんでした。"}), 500
 
 
 if __name__ == "__main__":
-    # Render assigns a port via the PORT environment variable
-    port = int(os.environ.get("PORT", 8080))
-    # app.run(debug=os.getenv("FLASK_DEBUG", "False").lower() == "true")
-    serve(app, host='0.0.0.0', port=port, _quiet=False)
-
+    serve(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), _quiet=False)

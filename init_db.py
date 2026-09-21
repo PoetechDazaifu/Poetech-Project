@@ -1,11 +1,14 @@
 import sqlite3
 import json
 import os
+import re
+from pathlib import Path
 from janome.tokenizer import Tokenizer
 
 # Config
-DATA_FILE = "poems.json"
-DB_FILE = "poems.db"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_FILE = BASE_DIR / "poems.json"
+DB_FILE = BASE_DIR / "poems.db"
 
 def get_stopwords():
     return set([
@@ -18,6 +21,19 @@ def get_stopwords():
         "する", "れる", "いる", "ある", "なる", "これ", "それ", "です", "ます", "も", "だ",
         "成る", "為る", "居る", "て", "な", "思う", "。", "、", "！", "？", ",", "から"
     ])
+
+
+def normalize_tags(tags_raw):
+    """Convert inconsistent source delimiters into a unique list of exact tags."""
+    if tags_raw is None:
+        return []
+    values = tags_raw if isinstance(tags_raw, list) else [tags_raw]
+    tags = []
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        tags.extend(tag.strip() for tag in re.split(r"[,、]", value) if tag.strip())
+    return list(dict.fromkeys(tags))
 
 def init_db():
     if not os.path.exists(DATA_FILE):
@@ -51,18 +67,27 @@ def init_db():
     c.execute('''
         CREATE TABLE poems (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            text TEXT,
-            source TEXT,
-            location TEXT,
+            text TEXT NOT NULL,
+            source TEXT NOT NULL,
+            residence TEXT,
+            location_category TEXT NOT NULL,
             age TEXT,
-            tags TEXT,
-            tokens TEXT
+            tags TEXT NOT NULL,
+            tokens TEXT NOT NULL
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE poem_tags (
+            poem_id INTEGER NOT NULL REFERENCES poems(id) ON DELETE CASCADE,
+            tag TEXT NOT NULL,
+            PRIMARY KEY (poem_id, tag)
         )
     ''')
     
     # Create Indexes
-    c.execute('CREATE INDEX idx_location ON poems(location)')
+    c.execute('CREATE INDEX idx_location_category ON poems(location_category)')
     c.execute('CREATE INDEX idx_source ON poems(source)')
+    c.execute('CREATE INDEX idx_poem_tags_tag ON poem_tags(tag)')
 
     print(f"Processing {len(poems)} poems...")
 
@@ -71,15 +96,12 @@ def init_db():
     for poem in poems:
         text = poem.get("句", "")
         source = poem.get("データ元", "")
-        location = poem.get("場所", "")
+        residence = poem.get("在住地", "")
+        location_category = poem.get("場所", "")
         age = poem.get("年齢", "")
         
         # Tags: JSON list -> string (normalized for LIKE search if needed, but JSON is safer)
-        tags_raw = poem.get("AIタグ", [])
-        if isinstance(tags_raw, str):
-            tags_list = [tags_raw]
-        else:
-            tags_list = tags_raw
+        tags_list = normalize_tags(poem.get("AIタグ", []))
         
         # Serialize tags as JSON for easy retrieval
         tags_json = json.dumps(tags_list, ensure_ascii=False)
@@ -96,9 +118,16 @@ def init_db():
         
         tokens_str = " ".join(tokens)
 
-        data_to_insert.append((text, source, location, age, tags_json, tokens_str))
+        data_to_insert.append((text, source, residence, location_category, age, tags_json, tokens_str, tags_list))
 
-    c.executemany('INSERT INTO poems (text, source, location, age, tags, tokens) VALUES (?, ?, ?, ?, ?, ?)', data_to_insert)
+    c.executemany(
+        'INSERT INTO poems (text, source, residence, location_category, age, tags, tokens) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [row[:-1] for row in data_to_insert],
+    )
+    c.executemany(
+        'INSERT INTO poem_tags (poem_id, tag) VALUES (?, ?)',
+        [(poem_id, tag) for poem_id, row in enumerate(data_to_insert, start=1) for tag in row[-1]],
+    )
     
     conn.commit()
     conn.close()
