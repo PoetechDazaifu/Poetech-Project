@@ -219,7 +219,8 @@ def facets():
                 "SELECT location_category AS value, COUNT(*) AS count FROM poems GROUP BY location_category ORDER BY location_category"
             ).fetchall()
             tag_rows = conn.execute(
-                "SELECT tag AS value, COUNT(*) AS count FROM poem_tags GROUP BY tag ORDER BY tag"
+                "SELECT tag AS value, COUNT(*) AS count FROM poem_tags WHERE tag != ? GROUP BY tag ORDER BY tag",
+                ("ERROR",),
             ).fetchall()
     except sqlite3.Error:
         logger.exception("Facet query failed")

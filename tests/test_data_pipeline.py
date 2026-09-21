@@ -59,6 +59,7 @@ class DataPipelineTests(unittest.TestCase):
         search = self.client.post("/search", json={"query": "太宰府"})
         self.assertEqual(facets.status_code, 200)
         self.assertTrue(any(item["value"] == "福祉" for item in facet_payload["tags"]))
+        self.assertFalse(any(item["value"] == "ERROR" for item in facet_payload["tags"]))
         self.assertTrue(any(item["value"] == "太宰府市内" for item in facet_payload["locations"]))
         self.assertEqual(search.status_code, 200)
         self.assertGreater(search.get_json()["total"], 0)
