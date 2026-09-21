@@ -78,6 +78,41 @@ function setFilterButtonState() {
   });
 }
 
+function createFilterButton(container, type, facet) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `btn ${type === "tag" ? "tag-button" : "location-button"}`;
+  button.dataset[type] = facet.value;
+  button.setAttribute("aria-pressed", "false");
+  button.textContent = `${facet.value} (${facet.count})`;
+  button.addEventListener("click", () => {
+    state[type] = state[type] === facet.value ? "" : facet.value;
+    setFilterButtonState();
+    search();
+  });
+  container.appendChild(button);
+}
+
+async function loadFacets() {
+  try {
+    const response = await fetch("/facets");
+    if (!response.ok) throw new Error("絞り込み候補を取得できませんでした。");
+    const payload = await response.json();
+    payload.sources.forEach((facet) => {
+      const option = document.createElement("option");
+      option.value = facet.value;
+      option.textContent = `${facet.value} (${facet.count})`;
+      sourceSelect.appendChild(option);
+    });
+    const tagButtons = document.getElementById("tag-buttons");
+    const locationButtons = document.getElementById("location-buttons");
+    payload.tags.forEach((facet) => createFilterButton(tagButtons, "tag", facet));
+    payload.locations.forEach((facet) => createFilterButton(locationButtons, "location", facet));
+  } catch (error) {
+    renderMessage(error.message, "text-danger");
+  }
+}
+
 async function updateWordcloud(currentFilters) {
   if (!currentFilters.query && !currentFilters.tag && !currentFilters.source && !currentFilters.location) {
     if (wordcloudObjectUrl) URL.revokeObjectURL(wordcloudObjectUrl);
@@ -169,18 +204,4 @@ document.getElementById("show-all-button").addEventListener("click", () => {
   search();
 });
 
-document.querySelectorAll("[data-tag]").forEach((button) => {
-  button.addEventListener("click", () => {
-    state.tag = state.tag === button.dataset.tag ? "" : button.dataset.tag;
-    setFilterButtonState();
-    search();
-  });
-});
-
-document.querySelectorAll("[data-location]").forEach((button) => {
-  button.addEventListener("click", () => {
-    state.location = state.location === button.dataset.location ? "" : button.dataset.location;
-    setFilterButtonState();
-    search();
-  });
-});
+loadFacets();

@@ -76,7 +76,10 @@ def build_where(filters):
     def escaped_like(value):
         return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
-    if filters["query"]:
+    if len(filters["query"]) >= 3:
+        clauses.append("p.id IN (SELECT rowid FROM poem_search WHERE poem_search MATCH ?)")
+        params.append(f'"{filters["query"].replace(chr(34), chr(34) * 2)}"')
+    elif filters["query"]:
         clauses.append("p.text LIKE ? ESCAPE '\\'")
         params.append(f"%{escaped_like(filters['query'])}%")
     if filters["source"]:
@@ -140,6 +143,29 @@ def healthz():
         logger.exception("Health check failed")
         return jsonify({"status": "unhealthy"}), 503
     return jsonify({"status": "ok"})
+
+
+@app.route("/facets")
+def facets():
+    try:
+        with db_connection() as conn:
+            source_rows = conn.execute(
+                "SELECT source AS value, COUNT(*) AS count FROM poems GROUP BY source ORDER BY source"
+            ).fetchall()
+            location_rows = conn.execute(
+                "SELECT location_category AS value, COUNT(*) AS count FROM poems GROUP BY location_category ORDER BY location_category"
+            ).fetchall()
+            tag_rows = conn.execute(
+                "SELECT tag AS value, COUNT(*) AS count FROM poem_tags GROUP BY tag ORDER BY tag"
+            ).fetchall()
+    except sqlite3.Error:
+        logger.exception("Facet query failed")
+        return jsonify({"error": "絞り込み候補を取得できませんでした。"}), 500
+    return jsonify({
+        "sources": [dict(row) for row in source_rows],
+        "locations": [dict(row) for row in location_rows],
+        "tags": [dict(row) for row in tag_rows],
+    })
 
 
 @app.route("/search", methods=["POST"])

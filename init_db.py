@@ -70,6 +70,7 @@ def create_schema(cursor):
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE VIRTUAL TABLE poem_search USING fts5(text, tokenize='trigram');
         CREATE INDEX idx_location_category ON poems(location_category);
         CREATE INDEX idx_source ON poems(source);
         CREATE INDEX idx_poem_tags_tag ON poem_tags(tag);
@@ -115,6 +116,7 @@ def build_database(data_file=DATA_FILE, db_file=DB_FILE):
             "INSERT INTO poems (text, source, residence, location_category, age, tags, tokens) VALUES (?, ?, ?, ?, ?, ?, ?)",
             poem_rows,
         )
+        cursor.executemany("INSERT INTO poem_search (rowid, text) VALUES (?, ?)", enumerate((row[0] for row in poem_rows), start=1))
         cursor.executemany("INSERT INTO poem_tags (poem_id, tag) VALUES (?, ?)", tag_rows)
         cursor.executemany("INSERT INTO dataset_metadata (key, value) VALUES (?, ?)", dataset_metadata(data_file).items())
         connection.commit()

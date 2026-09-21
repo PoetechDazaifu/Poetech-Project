@@ -51,6 +51,16 @@ class DataPipelineTests(unittest.TestCase):
         self.assertEqual(len(payload["items"]), 1)
         self.assertIn("福祉", payload["items"][0]["AIタグ"])
 
+    def test_facets_and_three_character_full_text_search(self):
+        facets = self.client.get("/facets")
+        facet_payload = facets.get_json()
+        search = self.client.post("/search", json={"query": "太宰府"})
+        self.assertEqual(facets.status_code, 200)
+        self.assertTrue(any(item["value"] == "福祉" for item in facet_payload["tags"]))
+        self.assertTrue(any(item["value"] == "太宰府市内" for item in facet_payload["locations"]))
+        self.assertEqual(search.status_code, 200)
+        self.assertGreater(search.get_json()["total"], 0)
+
     def test_invalid_search_input_returns_400(self):
         response = self.client.post("/search", json={"query": "x" * 101})
         self.assertEqual(response.status_code, 400)

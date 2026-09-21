@@ -42,9 +42,6 @@
           <label for="source-select" class="form-label">データ元</label>
           <select id="source-select" class="form-select">
             <option value="">選択なし</option>
-            <option value="ポスト">ポスト</option>
-            <option value="句会">句会</option>
-            <option value="広報">広報</option>
           </select>
         </div>
         <button type="submit" class="btn search-button w-100">検索</button>
@@ -62,23 +59,12 @@
         <strong>こども:</strong> こどもの成長、教育、スポーツ、学校に関する句<br>
         <strong>該当なし:</strong> どのタグにも関連しない句<br>
         ※タグはAIによる分類であり、必ずしも正確ではない可能性があります。</p>
-      <div class="filter-buttons" role="group" aria-label="AIタグ">
-        <button type="button" class="btn tag-button" data-tag="まちづくり" aria-pressed="false">まちづくり</button>
-        <button type="button" class="btn tag-button" data-tag="観光" aria-pressed="false">観光</button>
-        <button type="button" class="btn tag-button" data-tag="危機管理" aria-pressed="false">危機管理</button>
-        <button type="button" class="btn tag-button" data-tag="福祉" aria-pressed="false">福祉</button>
-        <button type="button" class="btn tag-button" data-tag="こども" aria-pressed="false">こども</button>
-        <button type="button" class="btn tag-button" data-tag="該当なし" aria-pressed="false">該当なし</button>
-      </div>
+      <div id="tag-buttons" class="filter-buttons" role="group" aria-label="AIタグ"></div>
     </section>
 
     <section class="location-filter" aria-labelledby="location-heading">
       <h2 id="location-heading" class="filter-heading">作者の居住地分類でしぼりこみ</h2>
-      <div class="filter-buttons" role="group" aria-label="居住地分類">
-        <button type="button" class="btn location-button" data-location="太宰府市内" aria-pressed="false">太宰府市内</button>
-        <button type="button" class="btn location-button" data-location="福岡県内(太宰府市以外)" aria-pressed="false">福岡県内(太宰府市以外)</button>
-        <button type="button" class="btn location-button" data-location="福岡県外" aria-pressed="false">福岡県外</button>
-      </div>
+      <div id="location-buttons" class="filter-buttons" role="group" aria-label="居住地分類"></div>
     </section>
 
     <div class="text-center mt-4">
