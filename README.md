@@ -69,7 +69,15 @@ DBを初期化した後、次を実行します。
 $ python -m unittest discover -s tests
 ```
 
-### 7. アプリの実行
+### 7. データの文字化けチェック（任意）
+
+`poems.json` 内に文字化けの原因となる「康熙部首（こうきぶしゅ）」が含まれていないかをチェックします。
+
+```bash
+python check_kangxi.py
+```
+
+### 8. アプリの実行
 
 ```bash
 $ python app.py
@@ -112,6 +120,7 @@ Cloudflareの導入判断、段階計画、ロールバック方法は [docs/clo
 ```
 ├── app.py                # Flaskアプリケーション
 ├── convert_to_json.py    # ExcelデータをJSONに変換
+├── check_kangxi.py       # JSONデータの文字化け（康熙部首）をチェック
 ├── data
 │   └── AIタグ付け短歌・俳句.xlsx  # データファイル
 ├── docker-compose.yml    # Docker Compose設定
