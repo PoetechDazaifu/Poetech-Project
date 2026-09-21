@@ -24,6 +24,8 @@ DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
 WORDCLOUD_CACHE_TTL_SECONDS = 600
 WORDCLOUD_CACHE_MAX_ITEMS = 128
+WORDCLOUD_RATE_LIMIT = 20
+WORDCLOUD_RATE_WINDOW_SECONDS = 60
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +33,7 @@ logger = logging.getLogger(__name__)
 wordcloud_cache = OrderedDict()
 wordcloud_cache_hits = 0
 wordcloud_cache_misses = 0
+wordcloud_request_times = {}
 
 
 def get_db_connection():
@@ -160,9 +163,38 @@ def wordcloud_cache_stats():
     return {"size": len(wordcloud_cache), "hits": wordcloud_cache_hits, "misses": wordcloud_cache_misses}
 
 
+def clear_wordcloud_rate_limits():
+    wordcloud_request_times.clear()
+
+
+def wordcloud_request_allowed(client_address):
+    now = time.monotonic()
+    recent = [timestamp for timestamp in wordcloud_request_times.get(client_address, []) if now - timestamp < WORDCLOUD_RATE_WINDOW_SECONDS]
+    if len(recent) >= WORDCLOUD_RATE_LIMIT:
+        wordcloud_request_times[client_address] = recent
+        return False
+    recent.append(now)
+    wordcloud_request_times[client_address] = recent
+    return True
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "style-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' https://github.githubassets.com blob:; "
+        "script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    )
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    return response
 
 
 @app.route("/healthz")
@@ -235,6 +267,10 @@ def search():
 
 @app.route("/wordcloud", methods=["POST"])
 def generate_wordcloud():
+    if not wordcloud_request_allowed(request.remote_addr or "unknown"):
+        response = jsonify({"error": "ワードクラウドの生成回数が多すぎます。しばらくしてから再試行してください。"})
+        response.headers["Retry-After"] = str(WORDCLOUD_RATE_WINDOW_SECONDS)
+        return response, 429
     try:
         filters = parse_search_request(request.get_json(silent=True))
         image = generate_wordcloud_png(

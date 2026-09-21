@@ -4,7 +4,8 @@ from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from app import app, clear_wordcloud_cache, wordcloud_cache_stats
+import app as application_module
+from app import app, clear_wordcloud_cache, clear_wordcloud_rate_limits, wordcloud_cache_stats
 from convert_to_json import has_blocking_errors, validate_dataframe
 from init_db import DB_FILE, build_database, normalize_tags
 
@@ -12,6 +13,7 @@ from init_db import DB_FILE, build_database, normalize_tags
 class DataPipelineTests(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        clear_wordcloud_rate_limits()
 
     def test_normalize_tags_supports_source_delimiters(self):
         self.assertEqual(normalize_tags("こども, 福祉、観光"), ["こども", "福祉", "観光"])
@@ -73,6 +75,23 @@ class DataPipelineTests(unittest.TestCase):
         self.assertIn('static/script.js', document)
         self.assertIn('aria-live="polite"', document)
         self.assertNotIn("axios", document)
+
+    def test_security_headers_are_returned(self):
+        response = self.client.get("/healthz")
+        self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["X-Frame-Options"], "SAMEORIGIN")
+
+    def test_wordcloud_rate_limit(self):
+        original_limit = application_module.WORDCLOUD_RATE_LIMIT
+        application_module.WORDCLOUD_RATE_LIMIT = 1
+        try:
+            self.assertEqual(self.client.post("/wordcloud", json={"tag": "福祉"}).status_code, 200)
+            response = self.client.post("/wordcloud", json={"tag": "福祉"})
+            self.assertEqual(response.status_code, 429)
+            self.assertEqual(response.headers["Retry-After"], "60")
+        finally:
+            application_module.WORDCLOUD_RATE_LIMIT = original_limit
 
     def test_wordcloud_is_cached_for_the_same_filters(self):
         clear_wordcloud_cache()
