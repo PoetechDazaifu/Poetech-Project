@@ -94,16 +94,23 @@ function createFilterButton(container, type, facet) {
 }
 
 async function loadFacets() {
-  try {
-    const response = await fetch("/facets");
-    if (!response.ok) throw new Error("絞り込み候補を取得できませんでした。");
-    const payload = await response.json();
-    const tagButtons = document.getElementById("tag-buttons");
-    const locationButtons = document.getElementById("location-buttons");
-    payload.tags.forEach((facet) => createFilterButton(tagButtons, "tag", facet));
-    payload.locations.forEach((facet) => createFilterButton(locationButtons, "location", facet));
-  } catch (error) {
-    renderMessage(error.message, "text-danger");
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch("/facets");
+      if (!response.ok) throw new Error("絞り込み候補を取得できませんでした。");
+      const payload = await response.json();
+      const tagButtons = document.getElementById("tag-buttons");
+      const locationButtons = document.getElementById("location-buttons");
+      payload.tags.forEach((facet) => createFilterButton(tagButtons, "tag", facet));
+      payload.locations.forEach((facet) => createFilterButton(locationButtons, "location", facet));
+      return;
+    } catch (error) {
+      if (attempt === 2) {
+        renderMessage(error.message, "text-danger");
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
   }
 }
 
