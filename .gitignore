@@ -7,6 +7,7 @@ __pycache__/
 
 # データベース
 poems.db
+data-validation-report.json
 
 # 仮想環境
 venv/

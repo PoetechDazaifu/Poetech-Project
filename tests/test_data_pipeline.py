@@ -1,9 +1,12 @@
 import sqlite3
 import unittest
 from contextlib import closing
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from app import app, generate_wordcloud_png
-from init_db import DB_FILE, normalize_tags
+from convert_to_json import has_blocking_errors, validate_dataframe
+from init_db import DB_FILE, build_database, normalize_tags
 
 
 class DataPipelineTests(unittest.TestCase):
@@ -13,6 +16,27 @@ class DataPipelineTests(unittest.TestCase):
     def test_normalize_tags_supports_source_delimiters(self):
         self.assertEqual(normalize_tags("こども, 福祉、観光"), ["こども", "福祉", "観光"])
         self.assertEqual(normalize_tags(None), [])
+
+    def test_validation_reports_unknown_tags_without_blocking_import(self):
+        import pandas as pd
+
+        report = validate_dataframe(pd.DataFrame([{
+            "句": "テスト句", "データ元": "テスト", "年齢": None, "在住地": None,
+            "AIタグ": "観光、独自タグ", "場所": "太宰府市内",
+        }]))
+        self.assertEqual(report["unknown_tags"], ["独自タグ"])
+        self.assertFalse(has_blocking_errors(report))
+
+    def test_atomic_database_build_preserves_existing_db_on_invalid_input(self):
+        with TemporaryDirectory() as directory:
+            directory = Path(directory)
+            database = directory / "poems.db"
+            database.write_text("previous database", encoding="utf-8")
+            invalid_json = directory / "invalid.json"
+            invalid_json.write_text("{}", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                build_database(invalid_json, database)
+            self.assertEqual(database.read_text(encoding="utf-8"), "previous database")
 
     def test_database_has_normalized_tag_rows(self):
         with closing(sqlite3.connect(DB_FILE)) as connection:

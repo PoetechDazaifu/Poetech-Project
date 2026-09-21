@@ -49,28 +49,19 @@ $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
 
-### 5. JSONデータの作成
+### 5. データ検証・JSON変換・データベース再構築
 
-データソースとして `data/AIタグ付け短歌・俳句.xlsx` をJSON形式に変換します。入力ファイルは引数で差し替えられます。
+データソースを検証してJSONへ変換し、SQLiteデータベースを安全に再構築します。既存のDBは、全工程が成功した場合にだけ置き換えられます。
 
 ```bash
-$ python convert_to_json.py
+$ python scripts/rebuild_data.py
 # 例: 別の入力ファイルを使う場合
-$ python convert_to_json.py path/to/poems.xlsx --output poems.json
+$ python scripts/rebuild_data.py path/to/poems.xlsx
 ```
 
+`data-validation-report.json` に件数、必須列・空欄、重複句、未定義タグを出力します。必須列・公開に必要な列の空欄は処理を中断し、重複句と未定義タグは警告として記録します。`AIタグ` は `,` と `、` のいずれで区切られていても個別タグに正規化されます。元データの`在住地`はDBに保持し、公開検索・表示には粗い分類である`場所`（太宰府市内など）のみを用います。
 
-### 6. データベースの初期化
-
-初回起動時やデータ更新時は、以下のコマンドでデータベースを作成・更新します。
-
-```bash
-$ python init_db.py
-```
-
-`AIタグ` は `,` と `、` のいずれで区切られていても個別タグに正規化されます。元データの`在住地`はDBに保持し、公開検索・表示には粗い分類である`場所`（太宰府市内など）のみを用います。
-
-### 7. テスト
+### 6. テスト
 
 DBを初期化した後、次を実行します。
 
@@ -78,7 +69,7 @@ DBを初期化した後、次を実行します。
 $ python -m unittest discover -s tests
 ```
 
-### 8. アプリの実行
+### 7. アプリの実行
 
 ```bash
 $ python app.py
