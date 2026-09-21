@@ -4,7 +4,7 @@ from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from app import app, generate_wordcloud_png
+from app import app, clear_wordcloud_cache, wordcloud_cache_stats
 from convert_to_json import has_blocking_errors, validate_dataframe
 from init_db import DB_FILE, build_database, normalize_tags
 
@@ -75,15 +75,15 @@ class DataPipelineTests(unittest.TestCase):
         self.assertNotIn("axios", document)
 
     def test_wordcloud_is_cached_for_the_same_filters(self):
-        generate_wordcloud_png.cache_clear()
+        clear_wordcloud_cache()
         first = self.client.post("/wordcloud", json={"tag": "福祉"})
         second = self.client.post("/wordcloud", json={"tag": "福祉"})
-        cache_info = generate_wordcloud_png.cache_info()
+        cache_info = wordcloud_cache_stats()
         self.assertEqual(first.status_code, 200)
         self.assertEqual(second.status_code, 200)
         self.assertEqual(first.data, second.data)
-        self.assertEqual(cache_info.misses, 1)
-        self.assertEqual(cache_info.hits, 1)
+        self.assertEqual(cache_info["misses"], 1)
+        self.assertEqual(cache_info["hits"], 1)
 
 
 if __name__ == "__main__":

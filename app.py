@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import sqlite3
+import time
+from collections import OrderedDict
 from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
@@ -20,10 +22,15 @@ FONT_FILE = BASE_DIR / "fonts" / "NotoSansJP-Medium.ttf"
 MAX_QUERY_LENGTH = 100
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
+WORDCLOUD_CACHE_TTL_SECONDS = 600
+WORDCLOUD_CACHE_MAX_ITEMS = 128
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+wordcloud_cache = OrderedDict()
+wordcloud_cache_hits = 0
+wordcloud_cache_misses = 0
 
 
 def get_db_connection():
@@ -106,9 +113,18 @@ def wordcloud_assets():
         return np.array(image), str(FONT_FILE)
 
 
-@lru_cache(maxsize=128)
 def generate_wordcloud_png(query, tag, source, location):
-    """Generate one image per normalized filter combination per process."""
+    """Generate a PNG with a bounded, TTL-based cache per application process."""
+    global wordcloud_cache_hits, wordcloud_cache_misses
+    key = (query, tag, source, location)
+    now = time.monotonic()
+    cached = wordcloud_cache.pop(key, None)
+    if cached and cached[0] > now:
+        wordcloud_cache_hits += 1
+        wordcloud_cache[key] = cached
+        return cached[1]
+
+    wordcloud_cache_misses += 1
     filters = {
         "query": query,
         "tag": tag,
@@ -126,7 +142,22 @@ def generate_wordcloud_png(query, tag, source, location):
     ).generate(text)
     image = io.BytesIO()
     wordcloud.to_image().save(image, "PNG")
-    return image.getvalue()
+    png = image.getvalue()
+    wordcloud_cache[key] = (now + WORDCLOUD_CACHE_TTL_SECONDS, png)
+    while len(wordcloud_cache) > WORDCLOUD_CACHE_MAX_ITEMS:
+        wordcloud_cache.popitem(last=False)
+    return png
+
+
+def clear_wordcloud_cache():
+    global wordcloud_cache_hits, wordcloud_cache_misses
+    wordcloud_cache.clear()
+    wordcloud_cache_hits = 0
+    wordcloud_cache_misses = 0
+
+
+def wordcloud_cache_stats():
+    return {"size": len(wordcloud_cache), "hits": wordcloud_cache_hits, "misses": wordcloud_cache_misses}
 
 
 @app.route("/")
