@@ -74,6 +74,9 @@ class DataPipelineTests(unittest.TestCase):
         self.assertIn('static/style.css', document)
         self.assertIn('static/script.js', document)
         self.assertIn('aria-live="polite"', document)
+        self.assertIn('<option value="ポスト">ポスト</option>', document)
+        self.assertIn('<option value="句会">句会</option>', document)
+        self.assertIn('<option value="広報">広報</option>', document)
         self.assertNotIn("axios", document)
 
     def test_security_headers_are_returned(self):

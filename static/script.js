@@ -98,12 +98,6 @@ async function loadFacets() {
     const response = await fetch("/facets");
     if (!response.ok) throw new Error("絞り込み候補を取得できませんでした。");
     const payload = await response.json();
-    payload.sources.forEach((facet) => {
-      const option = document.createElement("option");
-      option.value = facet.value;
-      option.textContent = `${facet.value} (${facet.count})`;
-      sourceSelect.appendChild(option);
-    });
     const tagButtons = document.getElementById("tag-buttons");
     const locationButtons = document.getElementById("location-buttons");
     payload.tags.forEach((facet) => createFilterButton(tagButtons, "tag", facet));
